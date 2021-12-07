@@ -25,8 +25,9 @@ class Server {
             // Check if that port is already open and send the data if it is
             if (this._connections.has(data.rinfo.port)) this._connections.get(data.rinfo.port).send(buf, this._udpPort, "127.0.0.1")
             else {
-                let sock = dgram.createSocket("udp4")
+                const sock = dgram.createSocket("udp4")
 
+                // If the internal client sends data, send that data to it's intended recipient
                 sock.on("message", (msg2, rinfo) => {
                     this._socket.write(Buffer.from(
                         JSON.stringify({
@@ -38,6 +39,8 @@ class Server {
 
                 sock.bind(data.rinfo.port)
 
+                // Send the data to the internal client
+                sock.send(buf, this._udpPort, "127.0.0.1")
                 this._connections.set(data.rinfo.port, sock)
             }
         })
