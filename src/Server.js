@@ -12,26 +12,31 @@ class Server {
         this._socket = dgram.createSocket("udp4")
 
         // A connection has been made downsteam
-        this._transport.on("connection", socket => {
-            // doesnt seem to be working
+        this._transport.on("connection", transport => {
             // The server needs to send this data to the external client
-            socket.on("data", msg => {
+            transport.on("data", msg => {
                 // Re-encode the data
                 let data = JSON.parse(msg.toString())
                 let buf = Buffer.from(data.msg, "base64")
+
+                console.log(`[${data.rinfo.address} <- ${transport.remoteAddress}] ${data.msg.slice(0, 45)}`)
 
                 // Send the data to the external client
                 this._socket.send(buf, data.rinfo.port, data.rinfo.address)
             })
 
-            // working
+            transport.on("error", e => {
+                console.log(e)
+            })
+
             // The server should wrap this data up and send it downstream
             this._socket.on("message", (msg, rinfo) => {
-                socket.write(Buffer.from(
+                console.log(`[${rinfo.address} -> ${transport.remoteAddress}] ${msg.toString("base64").slice(0, 45)}`)
+                transport.write(Buffer.from(
                     JSON.stringify({
                         rinfo, 
                         msg: msg.toString("base64")
-                    })
+                    }) + "[end]"
                 ))
             })
         })
