@@ -40,7 +40,7 @@ class Server {
                             JSON.stringify({
                                 rinfo: packet.rinfo, 
                                 msg: msg2.toString("base64")
-                            })
+                            }) + "[end]"
                         ))
                     })
     

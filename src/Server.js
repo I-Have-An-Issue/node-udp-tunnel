@@ -16,13 +16,20 @@ class Server {
             // The server needs to send this data to the external client
             transport.on("data", msg => {
                 // Re-encode the data
-                let data = JSON.parse(msg.toString())
-                let buf = Buffer.from(data.msg, "base64")
+                let data = []
+                for (let packet of msg.toString().split("[end]")) {
+                    try { data.push(JSON.parse(packet)) }
+                    catch (e) { console.log(packet) }
+                }
 
-                console.log(`[${data.rinfo.address} <- ${transport.remoteAddress}] ${data.msg.slice(0, 45)}`)
+                // Fixes strange buffer grouping
+                for (let packet of data) {
+                    let buf = Buffer.from(packet.msg, "base64")
+                    console.log(`[${packet.rinfo.address} <- ${transport.remoteAddress}] ${packet.msg.slice(0, 45)}`)
 
-                // Send the data to the external client
-                this._socket.send(buf, data.rinfo.port, data.rinfo.address)
+                    // Send the data to the external client
+                    this._socket.send(buf, packet.rinfo.port, packet.rinfo.address)
+                }
             })
 
             transport.on("error", e => {
