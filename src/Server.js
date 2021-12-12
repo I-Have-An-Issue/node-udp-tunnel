@@ -18,13 +18,13 @@ class Server {
                 // Re-encode the data
                 let data = []
                 for (let packet of msg.toString().split("[end]")) {
-                    try { data.push(JSON.parse(packet)) }
+                    try { if (packet !== "") data.push(JSON.parse(packet)) }
                     catch (e) { console.log(packet) }
                 }
 
                 // Fixes strange buffer grouping
                 for (let packet of data) {
-                    let buf = Buffer.from(packet.msg, "base64")
+                    let buf = Buffer.from(packet.msg, "hex")
 
                     // Send the data to the external client
                     this._socket.send(buf, packet.rinfo.port, packet.rinfo.address)
@@ -40,7 +40,7 @@ class Server {
                 transport.write(Buffer.from(
                     JSON.stringify({
                         rinfo, 
-                        msg: msg.toString("base64")
+                        msg: msg.toString("hex")
                     }) + "[end]"
                 ))
             })
