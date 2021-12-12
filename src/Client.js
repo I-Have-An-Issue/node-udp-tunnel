@@ -25,7 +25,6 @@ class Server {
             // Fixes strange buffer grouping
             for (let packet of data) {
                 let buf = Buffer.from(packet.msg, "base64")
-                console.log(`[${packet.rinfo.address} -> localhost] ${packet.msg.slice(0, 45)}`)
 
                 // Check if that port is already open and send the data if it is
                 if (this._connections.has(packet.rinfo.port)) {
@@ -35,7 +34,6 @@ class Server {
     
                     // If the internal client sends data, send that data to it's intended recipient
                     sock.on("message", (msg2, rinfo) => {
-                        console.log(`[${packet.rinfo.address} <- localhost] ${packet.msg.slice(0, 45)}`)
                         this._transport.write(Buffer.from(
                             JSON.stringify({
                                 rinfo: packet.rinfo, 

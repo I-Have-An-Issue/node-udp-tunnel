@@ -25,7 +25,6 @@ class Server {
                 // Fixes strange buffer grouping
                 for (let packet of data) {
                     let buf = Buffer.from(packet.msg, "base64")
-                    console.log(`[${packet.rinfo.address} <- ${transport.remoteAddress}] ${packet.msg.slice(0, 45)}`)
 
                     // Send the data to the external client
                     this._socket.send(buf, packet.rinfo.port, packet.rinfo.address)
@@ -38,7 +37,6 @@ class Server {
 
             // The server should wrap this data up and send it downstream
             this._socket.on("message", (msg, rinfo) => {
-                console.log(`[${rinfo.address} -> ${transport.remoteAddress}] ${msg.toString("base64").slice(0, 45)}`)
                 transport.write(Buffer.from(
                     JSON.stringify({
                         rinfo, 
