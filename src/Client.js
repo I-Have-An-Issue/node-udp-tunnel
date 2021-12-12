@@ -18,7 +18,7 @@ class Server {
             // Re-encode the data
             let data = []
             for (let packet of msg.toString().split("[end]")) {
-                try { if (packet !== "") data.push(JSON.parse(packet)) }
+                try { if (packet !== "") data.push(JSON.parse(packet.replace(/\n/g, ""))) }
                 catch (e) { console.log(packet) }
             }
 

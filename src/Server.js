@@ -18,21 +18,16 @@ class Server {
                 // Re-encode the data
                 let data = []
                 for (let packet of msg.toString().split("[end]")) {
-                    try { if (packet !== "") data.push(JSON.parse(packet)) }
+                    try { if (packet !== "") data.push(JSON.parse(packet.replace(/\n/g, ""))) }
                     catch (e) { console.log(packet) }
                 }
 
                 // Fixes strange buffer grouping
                 for (let packet of data) {
-                    let buf = Buffer.from(packet.msg, "hex")
-
                     // Send the data to the external client
+                    let buf = Buffer.from(packet.msg, "hex")
                     this._socket.send(buf, packet.rinfo.port, packet.rinfo.address)
                 }
-            })
-
-            transport.on("error", e => {
-                console.log(e)
             })
 
             // The server should wrap this data up and send it downstream
@@ -44,6 +39,8 @@ class Server {
                     }) + "[end]"
                 ))
             })
+
+            transport.on("error", e => console.log(e))
         })
 
         this._socket.bind(this._udpPort)
