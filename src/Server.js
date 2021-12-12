@@ -13,6 +13,7 @@ class Server {
 
         // A connection has been made downsteam
         this._transport.on("connection", socket => {
+            // doesnt seem to be working
             // The server needs to send this data to the external client
             socket.on("data", msg => {
                 // Re-encode the data
@@ -23,6 +24,7 @@ class Server {
                 this._socket.send(buf, data.rinfo.port, data.rinfo.address)
             })
 
+            // working
             // The server should wrap this data up and send it downstream
             this._socket.on("message", (msg, rinfo) => {
                 socket.write(Buffer.from(
