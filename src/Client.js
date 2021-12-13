@@ -24,7 +24,7 @@ class Server {
             let json = null
             try { json = JSON.parse(this._buffer.toString("UTF-8", 3, 3 + length)) } 
             catch (err) { console.log(err) }
-            
+
             this._buffer = Buffer.allocUnsafe(0)
 
             if (!json) return
@@ -36,8 +36,8 @@ class Server {
                 let sock = dgram.createSocket()
 
                 sock.on("message", (msg, rinfo) => {
-                    let json = Buffer.from(JSON.stringify({ rinfo: json.rinfo, msg: msg.toString("base64") }))
-                    this._transport.write(Buffer.concat([ Buffer.from('\x63'), Buffer.of(json.length), json ]))
+                    let out = Buffer.from(JSON.stringify({ rinfo: json.rinfo, msg: msg.toString("base64") }))
+                    this._transport.write(Buffer.concat([ Buffer.from('\x63'), Buffer.of(out.length), out ]))
                 })
 
                 sock.send(json.msg, null, null, this._udpPort, "127.0.0.1")
