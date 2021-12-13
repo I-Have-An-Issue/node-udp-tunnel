@@ -22,7 +22,7 @@ class Server {
             if(this._buffer.length - 3 < length) return
 
             let json = null
-            try { json = JSON.parse(this._buffer.toString("UTF-8", 3, 3 + length)) } 
+            try { json = JSON.parse(this._buffer.toString("utf-8", 2, 2 + length)) } 
             catch (err) { console.log(err) }
 
             this._buffer = Buffer.allocUnsafe(0)
