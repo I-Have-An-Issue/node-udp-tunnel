@@ -37,7 +37,9 @@ class Server {
 
             this._socket.on("message", (msg, rinfo) => {
                 let json = Buffer.from(JSON.stringify({ rinfo, msg: msg.toString("base64") }))
-                transport.write(Buffer.concat([ Buffer.from('\x63'), Buffer.of(json.length), json ]))
+                let buf = Buffer.allocUnsafe(2)
+                buf.writeUInt16BE(json.length)
+                transport.write(Buffer.concat([ buf, json ]))
             })
 
             transport.on("error", e => console.log(e))

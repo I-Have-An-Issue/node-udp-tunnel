@@ -36,8 +36,10 @@ class Server {
                 let sock = dgram.createSocket()
 
                 sock.on("message", (msg, rinfo) => {
-                    let out = Buffer.from(JSON.stringify({ rinfo: json.rinfo, msg: msg.toString("base64") }))
-                    this._transport.write(Buffer.concat([ Buffer.from('\x63'), Buffer.of(out.length), out ]))
+                    let json = Buffer.from(JSON.stringify({ rinfo: json.rinfo, msg: msg.toString("base64") }))
+                    let buf = Buffer.allocUnsafe(2)
+                    buf.writeUInt16BE(json.length)
+                    transport.write(Buffer.concat([ buf, json ]))
                 })
 
                 sock.send(json.msg, null, null, this._udpPort, "127.0.0.1")
