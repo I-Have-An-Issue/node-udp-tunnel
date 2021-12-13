@@ -33,7 +33,7 @@ class Server {
             if (this._connections.has(`${json.rinfo.address}:${json.rinfo.port}`)) {
                 this._connections.get(`${json.rinfo.address}:${json.rinfo.port}`).send(json.msg, null, null, this._udpPort, "127.0.0.1")
             } else {
-                let sock = dgram.createSocket()
+                let sock = dgram.createSocket("udp4")
 
                 sock.on("message", (msg, rinfo) => {
                     let json = Buffer.from(JSON.stringify({ rinfo: json.rinfo, msg: msg.toString("base64") }))
