@@ -1,5 +1,6 @@
 const net = require("net")
 const dgram = require("dgram")
+const log = require("./log")
 
 class Server {
     constructor(host = "LOL", udpPort = 27523, tcpPort = 27523) {
@@ -7,50 +8,45 @@ class Server {
         this._udpPort = udpPort
         this._tcpPort = tcpPort
         this._connections = new Map()
+        this._buffer = Buffer.allocUnsafe(0)
     }
 
     start() {
         this._transport = net.Socket()
-        // A connection has been made upstream
-        this._transport.on("connect", () => console.log("connected to host"))
 
         this._transport.on("data", msg => {
-            // Re-encode the data
-            let data = []
-            for (let packet of msg.toString().split("[end]")) {
-                try { if (packet !== "") data.push(JSON.parse(packet.replace(/\n/g, ""))) }
-                catch (e) { console.log(packet) }
-            }
+            this._buffer = Buffer.concat([this._buffer, msg])
+            if(this._buffer.length < 3) return
 
-            // Fixes strange buffer grouping
-            for (let packet of data) {
-                let buf = Buffer.from(packet.msg, "hex")
+            let length = this._buffer.readUInt16BE()
+            if(this._buffer.length - 3 < length) return
 
-                // Check if that port is already open and send the data if it is
-                if (this._connections.has(packet.rinfo.port)) {
-                    this._connections.get(packet.rinfo.port).send(buf, this._udpPort, "127.0.0.1")
-                } else {
-                    const sock = dgram.createSocket("udp4")
-    
-                    // If the internal client sends data, send that data to it's intended recipient
-                    sock.on("message", (msg2, rinfo) => {
-                        this._transport.write(Buffer.from(
-                            JSON.stringify({
-                                rinfo: packet.rinfo, 
-                                msg: msg2.toString("hex")
-                            }) + "[end]"
-                        ))
-                    })
-    
-                    sock.bind()
-    
-                    // Send the data to the internal client
-                    sock.send(buf, this._udpPort, "127.0.0.1")
-                    this._connections.set(packet.rinfo.port, sock)
-                }
+            let json = null
+            try { json = JSON.parse(this._buffer.toString("UTF-8", 3, 3 + length)) } 
+            catch (err) { console.log(err) }
+            
+            this._buffer = Buffer.allocUnsafe(0)
+
+            if (!json) return
+            json.msg = Buffer.from(json.msg, "base64")
+
+            if (this._connections.has(`${json.rinfo.address}:${json.rinfo.port}`)) {
+                this._connections.get(`${json.rinfo.address}:${json.rinfo.port}`).send(json.msg, null, null, this._udpPort, "127.0.0.1")
+            } else {
+                let sock = dgram.createSocket()
+
+                sock.on("message", (msg, rinfo) => {
+                    let json = Buffer.from(JSON.stringify({ rinfo: json.rinfo, msg: msg.toString("base64") }))
+                    this._transport.write(Buffer.concat([ Buffer.from('\x63'), Buffer.of(json.length), json ]))
+                })
+
+                sock.send(json.msg, null, null, this._udpPort, "127.0.0.1")
+                sock.bind()
+                this._connections.set(`${json.rinfo.address}:${json.rinfo.port}`, sock)
             }
         })
 
+        this._transport.on("connect", () => log(`Connected to transport socket: ${this._host}`))
         this._transport.on("error", e => console.log(e))
         this._transport.connect(this._tcpPort, this._host)
     }

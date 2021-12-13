@@ -1,43 +1,43 @@
 const net = require("net")
 const dgram = require("dgram")
+const log = require("./log")
 
 class Server {
     constructor(udpPort = 27523, tcpPort = 27523) {
         this._udpPort = udpPort
         this._tcpPort = tcpPort
+        this._buffer = Buffer.allocUnsafe(0)
     }
 
     start() {
         this._transport = net.createServer()
         this._socket = dgram.createSocket("udp4")
 
-        // A connection has been made downsteam
         this._transport.on("connection", transport => {
-            // The server needs to send this data to the external client
-            transport.on("data", msg => {
-                // Re-encode the data
-                let data = []
-                for (let packet of msg.toString().split("[end]")) {
-                    try { if (packet !== "") data.push(JSON.parse(packet.replace(/\n/g, ""))) }
-                    catch (e) { console.log(packet) }
-                }
+            log(`New transport connection: ${transport.remoteAddress}`)
 
-                // Fixes strange buffer grouping
-                for (let packet of data) {
-                    // Send the data to the external client
-                    let buf = Buffer.from(packet.msg, "hex")
-                    this._socket.send(buf, packet.rinfo.port, packet.rinfo.address)
-                }
+            transport.on("data", msg => {
+                this._buffer = Buffer.concat([this._buffer, msg])
+                if(this._buffer.length < 3) return
+
+                let length = this._buffer.readUInt16BE()
+                if(this._buffer.length - 3 < length) return
+
+                let json = null
+                try { json = JSON.parse(this._buffer.toString("UTF-8", 3, 3 + length)) } 
+                catch (err) { console.log(err) }
+
+                this._buffer = Buffer.allocUnsafe(0)
+
+                if (!json) return
+                json.msg = Buffer.from(json.msg, "base64")
+
+                this._socket.send(json.msg, json.rinfo.port, json.rinfo.address)
             })
 
-            // The server should wrap this data up and send it downstream
             this._socket.on("message", (msg, rinfo) => {
-                transport.write(Buffer.from(
-                    JSON.stringify({
-                        rinfo, 
-                        msg: msg.toString("hex")
-                    }) + "[end]"
-                ))
+                let json = Buffer.from(JSON.stringify({ rinfo, msg: msg.toString("base64") }))
+                transport.write(Buffer.concat([ Buffer.from('\x63'), Buffer.of(json.length), json ]))
             })
 
             transport.on("error", e => console.log(e))
