@@ -1,9 +1,10 @@
 const net = require("net")
 const dgram = require("dgram")
-const log = require("./log")
+const { EventEmitter } = require("stream")
 
-class Server {
-    constructor(host = "LOL", udpPort = 27523, tcpPort = 27523) {
+class Server extends EventEmitter {
+    constructor(host = "127.0.0.1", udpPort = 27523, tcpPort = 27523) {
+        super()
         this._host = host
         this._udpPort = udpPort
         this._tcpPort = tcpPort
@@ -16,40 +17,43 @@ class Server {
 
         this._transport.on("data", msg => {
             this._buffer = Buffer.concat([this._buffer, msg])
-            if(this._buffer.length < 3) return
+            if(this._buffer.length < 16) return
 
             let length = this._buffer.readUInt16BE()
-            if(this._buffer.length - 3 < length) return
+            if(this._buffer.length - 16 < length) return
 
             let json = null
-            try { json = JSON.parse(this._buffer.toString("utf-8", 2, 2 + length)) } 
+            try { json = JSON.parse(this._buffer.toString("utf-8", 16, 16 + length)) } 
             catch (err) { console.log(err) }
 
             this._buffer = Buffer.allocUnsafe(0)
 
             if (!json) return
             json.msg = Buffer.from(json.msg, "base64")
+            this.emit("data_in", json)
 
-            if (this._connections.has(`${json.rinfo.address}:${json.rinfo.port}`)) {
-                this._connections.get(`${json.rinfo.address}:${json.rinfo.port}`).send(json.msg, null, null, this._udpPort, "127.0.0.1")
-            } else {
-                let sock = dgram.createSocket("udp4")
+            let udpsock = this._connections.get(`${json.rinfo.address}:${json.rinfo.port}`)
+            if (udpsock) udpsock.send(json.msg, null, null, this._udpPort, "127.0.0.1")
+            else {
+                udpsock = dgram.createSocket("udp4")
 
-                sock.on("message", (msg, rinfo) => {
-                    let json = Buffer.from(JSON.stringify({ rinfo: json.rinfo, msg: msg.toString("base64") }))
-                    let buf = Buffer.allocUnsafe(2)
-                    buf.writeUInt16BE(json.length)
-                    transport.write(Buffer.concat([ buf, json ]))
+                udpsock.on("message", (msg, rinfo) => {
+                    let payload = Buffer.from(JSON.stringify({ rinfo: json.rinfo, msg: msg.toString("base64") }))
+                    this.emit("data_out", payload)
+                    let buf = Buffer.allocUnsafe(16)
+                    buf.writeUInt16BE(payload.length)
+                    transport.write(Buffer.concat([ buf, payload ]))
                 })
 
-                sock.send(json.msg, null, null, this._udpPort, "127.0.0.1")
-                sock.bind()
-                this._connections.set(`${json.rinfo.address}:${json.rinfo.port}`, sock)
+                udpsock.once("listening", () => udpsock.send(json.msg, null, null, this._udpPort, "127.0.0.1"))
+
+                udpsock.bind()
+                this._connections.set(`${json.rinfo.address}:${json.rinfo.port}`, udpsock)
             }
         })
 
-        this._transport.on("connect", () => log(`Connected to transport socket: ${this._host}`))
-        this._transport.on("error", e => console.log(e))
+        this._transport.on("connect", () => this.emit("connect", this._host))
+        this._transport.on("error", e => this.emit("error", e))
         this._transport.connect(this._tcpPort, this._host)
     }
 }
