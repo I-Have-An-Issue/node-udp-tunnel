@@ -33,7 +33,7 @@ class Server extends EventEmitter {
             this.emit("data_in", json)
 
             let udpsock = this._connections.get(`${json.rinfo.address}:${json.rinfo.port}`)
-            if (udpsock) udpsock.send(json.msg, null, null, this._udpPort, "127.0.0.1")
+            if (udpsock) udpsock.send(json.msg, this._udpPort, "127.0.0.1")
             else {
                 udpsock = dgram.createSocket("udp4")
 
