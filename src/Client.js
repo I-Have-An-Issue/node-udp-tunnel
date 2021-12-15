@@ -40,9 +40,9 @@ class Server extends EventEmitter {
                 udpsock.on("message", (msg, rinfo) => {
                     let payload = Buffer.from(JSON.stringify({ rinfo: json.rinfo, msg: msg.toString("base64") }))
                     this.emit("data_out", payload)
-                    let buf = Buffer.alloc(16)
+                    let buf = Buffer.allocUnsafe(16)
                     buf.writeUInt16BE(payload.length)
-                    transport.write(Buffer.concat([ buf, payload ]))
+                    this._transport.write(Buffer.concat([ buf, payload ]))
                 })
 
                 udpsock.once("listening", () => udpsock.send(json.msg, null, null, this._udpPort, "127.0.0.1"))
