@@ -40,7 +40,7 @@ class Server extends EventEmitter {
                 udpsock.on("message", (msg, rinfo) => {
                     let payload = Buffer.from(JSON.stringify({ rinfo: json.rinfo, msg: msg.toString("base64") }))
                     this.emit("data_out", payload)
-                    let buf = Buffer.allocUnsafe(16)
+                    let buf = Buffer.alloc(16)
                     buf.writeUInt16BE(payload.length)
                     transport.write(Buffer.concat([ buf, payload ]))
                 })
@@ -52,7 +52,7 @@ class Server extends EventEmitter {
             }
         })
 
-        this._transport.on("connect", () => this.emit("connect", this._host))
+        this._transport.on("connect", () => this.emit("connect", this._host, this._tcpPort))
         this._transport.on("error", e => this.emit("error", e))
         this._transport.connect(this._tcpPort, this._host)
     }

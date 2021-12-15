@@ -39,7 +39,7 @@ class Server extends EventEmitter {
             this._socket.on("message", (msg, rinfo) => {
                 let json = Buffer.from(JSON.stringify({ rinfo, msg: msg.toString("base64") }))
                 this.emit("data_out", json)
-                let buf = Buffer.allocUnsafe(16)
+                let buf = Buffer.alloc(16)
                 buf.writeUInt16BE(json.length)
                 transport.write(Buffer.concat([ buf, json ]))
             })
