@@ -45,7 +45,7 @@ class Server extends EventEmitter {
                     this._transport.write(Buffer.concat([ buf, payload ]))
                 })
 
-                udpsock.once("listening", () => udpsock.send(json.msg, null, null, this._udpPort, "127.0.0.1"))
+                udpsock.once("listening", () => udpsock.send(json.msg, this._udpPort, "127.0.0.1"))
 
                 udpsock.bind()
                 this._connections.set(`${json.rinfo.address}:${json.rinfo.port}`, udpsock)
