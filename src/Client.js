@@ -22,11 +22,13 @@ class Server extends EventEmitter {
             let length = this._buffer.readUInt16BE()
             if(this._buffer.length - 16 < length) return
 
-            let json = null
-            try { json = JSON.parse(this._buffer.toString("utf-8", 16, 16 + length)) } 
-            catch (err) { console.log(err) }
+            let packet = Buffer.alloc(0)
+            this._buffer.copy(packet, 0, 16, length)
+            this._buffer = this._buffer.slice(length + 16, this._buffer.length)
 
-            this._buffer = Buffer.allocUnsafe(0)
+            let json = null
+            try { json = JSON.parse(packet.toString("UTF-8")) } 
+            catch (err) { console.log(err) }
 
             if (!json) return
             json.msg = Buffer.from(json.msg, "base64")
