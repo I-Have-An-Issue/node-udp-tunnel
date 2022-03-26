@@ -22,8 +22,8 @@ class Server extends EventEmitter {
             let length = this._buffer.readUInt16BE()
             if(this._buffer.length - 16 < length) return
 
-            let packet = Buffer.alloc(0)
-            this._buffer.copy(packet, 0, 16, length)
+            let packet = Buffer.alloc(length)
+            this._buffer.copy(packet, 0, 16, length+16)
             this._buffer = this._buffer.slice(length + 16, this._buffer.length)
 
             let json = null
