@@ -1,5 +1,5 @@
 const { Server } = require("../src")
-const server = new Server(28572, process.env.PORT)
+const server = new Server(28572, 10370)
 
 server.on("connection", ip => console.log(`New client connected to transport socket: ${ip}`))
 server.on("error", e => console.log(e))
