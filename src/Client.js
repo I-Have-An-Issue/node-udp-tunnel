@@ -29,7 +29,7 @@ class Server extends EventEmitter {
 			let data = packet.toString("UTF-8")
 
 			let fullPacket = {
-				rinfo: JSON.parse(data.split("...")[0]),
+				rinfo: { address: data.split("...")[0].split(",")[0], port: data.split("...")[0].split(",")[1] },
 				msg: data.split("...")[1],
 			}
 
@@ -42,7 +42,7 @@ class Server extends EventEmitter {
 				udpsock = dgram.createSocket("udp4")
 
 				udpsock.on("message", (msg, rinfo) => {
-					let payload = Buffer.from(JSON.stringify(fullPacket.rinfo) + "..." + msg.toString("base64"))
+					let payload = Buffer.from(`${fullPacket.rinfo.address},${fullPacket.rinfo.port}...${msg.toString("base64")}`)
 					this.emit("data_out", payload)
 					let buf = Buffer.alloc(16)
 					buf.writeUInt16BE(payload.length)
@@ -54,9 +54,6 @@ class Server extends EventEmitter {
 				udpsock.bind()
 				this._connections.set(`${fullPacket.rinfo.address}:${fullPacket.rinfo.port}`, udpsock)
 			}
-
-			console.log(this._buffer.length)
-			this._buffer = Buffer.alloc(0)
 		})
 
 		this._transport.on("connect", () => this.emit("connect", this._host, this._tcpPort))

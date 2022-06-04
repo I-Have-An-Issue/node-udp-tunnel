@@ -30,7 +30,7 @@ class Server extends EventEmitter {
 				let data = packet.toString("UTF-8")
 
 				let fullPacket = {
-					rinfo: JSON.parse(data.split("...")[0]),
+					rinfo: { address: data.split("...")[0].split(",")[0], port: data.split("...")[0].split(",")[1] },
 					msg: data.split("...")[1],
 				}
 
@@ -38,13 +38,10 @@ class Server extends EventEmitter {
 				this.emit("data_in", fullPacket)
 
 				this._socket.send(fullPacket.msg, fullPacket.rinfo.port, fullPacket.rinfo.address)
-
-				console.log(this._buffer.length)
-				this._buffer = Buffer.alloc(0)
 			})
 
 			this._socket.on("message", (msg, rinfo) => {
-				let json = Buffer.from(JSON.stringify(rinfo) + "..." + msg.toString("base64"))
+				let json = Buffer.from(`${rinfo.address},${rinfo.port}...${msg.toString("base64")}`)
 				this.emit("data_out", json)
 				let buf = Buffer.alloc(16)
 				buf.writeUInt16BE(json.length)
