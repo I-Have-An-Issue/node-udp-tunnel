@@ -1,6 +1,8 @@
 const net = require("net")
 const dgram = require("dgram")
 const { EventEmitter } = require("stream")
+const ipBuffer = require("./ipBuffer")
+
 class Server extends EventEmitter {
 	constructor(udpPort = 27523, tcpPort = 27523) {
 		super()
@@ -16,36 +18,12 @@ class Server extends EventEmitter {
 		this._transport.on("connection", (transport) => {
 			this.emit("connection", transport.remoteAddress)
 
-			transport.on("data", (msg) => {
-				this._buffer = Buffer.concat([this._buffer, msg])
-				if (this._buffer.length < 16) return
-
-				let length = this._buffer.readUInt16BE()
-				if (this._buffer.length - 16 < length) return
-
-				let packet = Buffer.alloc(length)
-				this._buffer.copy(packet, 0, 16, length + 16)
-				this._buffer = this._buffer.slice(length + 16, this._buffer.length)
-
-				let data = packet.toString("UTF-8")
-
-				let fullPacket = {
-					rinfo: { address: data.split("...")[0].split(",")[0], port: data.split("...")[0].split(",")[1] },
-					msg: data.split("...")[1],
-				}
-
-				fullPacket.msg = Buffer.from(fullPacket.msg, "base64")
-				this.emit("data_in", fullPacket)
-
-				this._socket.send(fullPacket.msg, fullPacket.rinfo.port, fullPacket.rinfo.address)
-			})
+			transport.on("data", (msg) => {})
 
 			this._socket.on("message", (msg, rinfo) => {
-				let json = Buffer.from(`${rinfo.address},${rinfo.port}...${msg.toString("base64")}`)
-				this.emit("data_out", json)
-				let buf = Buffer.alloc(16)
-				buf.writeUInt16BE(json.length)
-				transport.write(Buffer.concat([buf, json]))
+				const rinfoBuffer = ipBuffer.toBuffer(rinfo)
+				const packet = Buffer.concat([rinfoBuffer, msg])
+				transport.write(packet)
 			})
 
 			transport.on("error", (e) => this.emit("error", e))

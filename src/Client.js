@@ -1,6 +1,7 @@
 const net = require("net")
 const dgram = require("dgram")
 const { EventEmitter } = require("stream")
+const ipBuffer = require("./ipBuffer")
 
 class Server extends EventEmitter {
 	constructor(host = "127.0.0.1", udpPort = 27523, tcpPort = 27523) {
@@ -16,43 +17,16 @@ class Server extends EventEmitter {
 		this._transport = net.Socket()
 
 		this._transport.on("data", (msg) => {
-			this._buffer = Buffer.concat([this._buffer, msg])
-			if (this._buffer.length < 16) return
-
-			let length = this._buffer.readUInt16BE()
-			if (this._buffer.length - 16 < length) return
-
-			let packet = Buffer.alloc(length)
-			this._buffer.copy(packet, 0, 16, length + 16)
-			this._buffer = this._buffer.slice(length + 16, this._buffer.length)
-
-			let data = packet.toString("UTF-8")
-
-			let fullPacket = {
-				rinfo: { address: data.split("...")[0].split(",")[0], port: data.split("...")[0].split(",")[1] },
-				msg: data.split("...")[1],
-			}
-
-			fullPacket.msg = Buffer.from(fullPacket.msg, "base64")
-			this.emit("data_in", fullPacket)
-
-			let udpsock = this._connections.get(`${fullPacket.rinfo.address}:${fullPacket.rinfo.port}`)
-			if (udpsock) udpsock.send(fullPacket.msg, this._udpPort, "127.0.0.1")
+			const rinfo = ipBuffer.toRinfo(msg.slice(0, 6))
+			let socket = this._connections.get(`${rinfo.address}:${rinfo.port}`)
+			if (socket) socket.send(msg.slice(6), this._udpPort, "127.0.0.1")
 			else {
-				udpsock = dgram.createSocket("udp4")
+				socket = dgram.createSocket("udp4")
 
-				udpsock.on("message", (msg, rinfo) => {
-					let payload = Buffer.from(`${fullPacket.rinfo.address},${fullPacket.rinfo.port}...${msg.toString("base64")}`)
-					this.emit("data_out", payload)
-					let buf = Buffer.alloc(16)
-					buf.writeUInt16BE(payload.length)
-					this._transport.write(Buffer.concat([buf, payload]))
+				socket.on("message", (msg, rinfo) => {
+					const incomingRinfo = ipBuffer.toBuffer(rinfo)
+					this._transport.write(Buffer.concat([incomingRinfo, msg]))
 				})
-
-				udpsock.once("listening", () => udpsock.send(fullPacket.msg, this._udpPort, "127.0.0.1"))
-
-				udpsock.bind()
-				this._connections.set(`${fullPacket.rinfo.address}:${fullPacket.rinfo.port}`, udpsock)
 			}
 		})
 
