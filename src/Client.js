@@ -18,20 +18,22 @@ class Server extends EventEmitter {
 
 		this._transport.on("data", (msg) => {
 			const rinfo = ipBuffer.toRinfo(msg.slice(0, 6))
+			const packet = msg.slice(6, msg.length)
 			let socket = this._connections.get(`${rinfo.address}:${rinfo.port}`)
-			if (socket) socket.send(msg.slice(6, msg.length), this._udpPort, "127.0.0.1")
+			if (socket) socket.send(packet, this._udpPort, "127.0.0.1")
 			else {
 				socket = dgram.createSocket("udp4")
+				this._connections.set(`${rinfo.address}:${rinfo.port}`, socket)
 
-				socket.on("message", (msg, rinfo) => {
+				socket.on("message", (msg2, rinfo) => {
 					const incomingRinfo = ipBuffer.toBuffer(rinfo)
-					const packet = Buffer.concat([incomingRinfo, msg])
+					const packet = Buffer.concat([incomingRinfo, msg2])
 					console.log("[client in]", packet.length)
 					this._transport.write(packet)
 				})
 
 				socket.on("listening", () => {
-					socket.send(msg.slice(6, msg.length), this._udpPort, "127.0.0.1")
+					socket.send(packet, this._udpPort, "127.0.0.1")
 				})
 			}
 			console.log("[client out]", msg.length)
