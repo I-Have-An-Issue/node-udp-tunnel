@@ -9,7 +9,7 @@ class Server extends EventEmitter {
 		this._udpPort = udpPort
 		this._tcpPort = tcpPort
 		this._connections = new Map()
-		this._buffer = Buffer.allocUnsafe(0)
+		this._buffer = Buffer.alloc(0)
 	}
 
 	start() {
@@ -26,26 +26,25 @@ class Server extends EventEmitter {
 			this._buffer.copy(packet, 0, 16, length + 16)
 			this._buffer = this._buffer.slice(length + 16, this._buffer.length)
 
-			let json = null
-			try {
-				json = JSON.parse(packet.toString("UTF-8"))
-			} catch (err) {
-				console.log(err)
+			let data = packet.toString("UTF-8")
+
+			let fullPacket = {
+				rinfo: JSON.parse(data.split("...")[0]),
+				msg: data.split("...")[1],
 			}
 
-			if (!json) return
-			json.msg = Buffer.from(json.msg, "base64")
-			this.emit("data_in", json)
+			fullPacket.msg = Buffer.from(fullPacket.msg, "base64")
+			this.emit("data_in", fullPacket)
 
-			let udpsock = this._connections.get(`${json.rinfo.address}:${json.rinfo.port}`)
-			if (udpsock) udpsock.send(json.msg, this._udpPort, "127.0.0.1")
+			let udpsock = this._connections.get(`${fullPacket.rinfo.address}:${fullPacket.rinfo.port}`)
+			if (udpsock) udpsock.send(fullPacket.msg, this._udpPort, "127.0.0.1")
 			else {
 				udpsock = dgram.createSocket("udp4")
 
 				udpsock.on("message", (msg, rinfo) => {
-					let payload = Buffer.from(JSON.stringify({ rinfo: json.rinfo, msg: msg.toString("base64") }))
+					let payload = Buffer.from(JSON.stringify(fullPacket.rinfo) + "..." + msg.toString("base64"))
 					this.emit("data_out", payload)
-					let buf = Buffer.allocUnsafe(16)
+					let buf = Buffer.alloc(16)
 					buf.writeUInt16BE(payload.length)
 					this._transport.write(Buffer.concat([buf, payload]))
 				})

@@ -6,7 +6,7 @@ class Server extends EventEmitter {
 		super()
 		this._udpPort = udpPort
 		this._tcpPort = tcpPort
-		this._buffer = Buffer.allocUnsafe(0)
+		this._buffer = Buffer.alloc(0)
 	}
 
 	start() {
@@ -27,24 +27,23 @@ class Server extends EventEmitter {
 				this._buffer.copy(packet, 0, 16, length + 16)
 				this._buffer = this._buffer.slice(length + 16, this._buffer.length)
 
-				let json = null
-				try {
-					json = JSON.parse(packet.toString("UTF-8"))
-				} catch (err) {
-					console.log(err)
+				let data = packet.toString("UTF-8")
+
+				let fullPacket = {
+					rinfo: JSON.parse(data.split("...")[0]),
+					msg: data.split("...")[1],
 				}
 
-				if (!json) return
-				json.msg = Buffer.from(json.msg, "base64")
-				this.emit("data_in", json)
+				fullPacket.msg = Buffer.from(fullPacket.msg, "base64")
+				this.emit("data_in", fullPacket)
 
-				this._socket.send(json.msg, json.rinfo.port, json.rinfo.address)
+				this._socket.send(fullPacket.msg, fullPacket.rinfo.port, fullPacket.rinfo.address)
 			})
 
 			this._socket.on("message", (msg, rinfo) => {
-				let json = Buffer.from(JSON.stringify({ rinfo, msg: msg.toString("base64") }))
+				let json = Buffer.from(JSON.stringify(rinfo) + "..." + msg.toString("base64"))
 				this.emit("data_out", json)
-				let buf = Buffer.allocUnsafe(16)
+				let buf = Buffer.alloc(16)
 				buf.writeUInt16BE(json.length)
 				transport.write(Buffer.concat([buf, json]))
 			})
