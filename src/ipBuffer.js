@@ -1,11 +1,3 @@
-/*
- * udp-tunnel-cli
- *
- * Copyright (c) 2016 Thomas Baumbach tom@xolo.pw
- *
- * Licensed under the MIT License
- */
-
 module.exports.toBuffer = (rinfo) => {
 	let ip = rinfo.address.split(".")
 	let buf = Buffer.alloc(6)

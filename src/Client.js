@@ -2,6 +2,7 @@ const net = require("net")
 const dgram = require("dgram")
 const { EventEmitter } = require("stream")
 const ipBuffer = require("./ipBuffer")
+const chunk = require("./chunk")
 
 class Server extends EventEmitter {
 	constructor(host = "127.0.0.1", udpPort = 27523, tcpPort = 27523) {
@@ -27,8 +28,12 @@ class Server extends EventEmitter {
 
 				socket.on("message", (outgoingMsg) => {
 					const outgoingRinfo = ipBuffer.toBuffer(rinfo)
-					const outgoingPacket = Buffer.concat([outgoingRinfo, outgoingMsg])
-					this._transport.write(outgoingPacket)
+					const chunks = chunk(outgoingMsg)
+
+					for (let i = 0; i < chunks.length; i++) {
+						const outgoingPacket = Buffer.concat([outgoingRinfo, chunks[i]])
+						this._transport.write(outgoingPacket)
+					}
 				})
 
 				socket.on("listening", () => {
