@@ -18,7 +18,7 @@ class Server extends EventEmitter {
 
 		this._transport.on("data", (msg) => {
 			const rinfo = ipBuffer.toRinfo(msg.slice(0, 6))
-			const packet = msg.slice(6, msg.length - 1)
+			const packet = msg.slice(6, msg.length)
 			let socket = this._connections.get(`${rinfo.address}:${rinfo.port}`)
 			if (socket) socket.send(packet, this._udpPort, "127.0.0.1")
 			else {
@@ -28,6 +28,8 @@ class Server extends EventEmitter {
 				socket.on("message", (outgoingMsg) => {
 					const outgoingRinfo = ipBuffer.toBuffer(rinfo)
 					const outgoingPacket = Buffer.concat([outgoingRinfo, outgoingMsg])
+					console.log(rinfo)
+					console.log(outgoingMsg, "\n")
 					this._transport.write(outgoingPacket)
 				})
 
@@ -37,9 +39,6 @@ class Server extends EventEmitter {
 
 				socket.bind()
 			}
-
-			console.log(rinfo)
-			console.log(packet, "\n")
 		})
 
 		this._transport.on("connect", () => this.emit("connect", this._host, this._tcpPort))
