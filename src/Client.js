@@ -24,7 +24,7 @@ class Server extends EventEmitter {
 
 			let packet = Buffer.alloc(length)
 			this._buffer.copy(packet, 0, 16, length + 16)
-			this._buffer = Buffer.alloc(0)
+			this._buffer = this._buffer.slice(length + 16, this._buffer.length)
 
 			let data = packet.toString("UTF-8")
 
@@ -54,6 +54,8 @@ class Server extends EventEmitter {
 				udpsock.bind()
 				this._connections.set(`${fullPacket.rinfo.address}:${fullPacket.rinfo.port}`, udpsock)
 			}
+
+			console.log(this._buffer.length)
 		})
 
 		this._transport.on("connect", () => this.emit("connect", this._host, this._tcpPort))

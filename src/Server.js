@@ -25,7 +25,7 @@ class Server extends EventEmitter {
 
 				let packet = Buffer.alloc(length)
 				this._buffer.copy(packet, 0, 16, length + 16)
-				this._buffer = Buffer.alloc(0)
+				this._buffer = this._buffer.slice(length + 16, this._buffer.length)
 
 				let data = packet.toString("UTF-8")
 
