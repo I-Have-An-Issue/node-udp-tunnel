@@ -38,6 +38,9 @@ class Server extends EventEmitter {
 				this.emit("data_in", fullPacket)
 
 				this._socket.send(fullPacket.msg, fullPacket.rinfo.port, fullPacket.rinfo.address)
+
+				console.log(this._buffer.length)
+				this._buffer = Buffer.alloc(0)
 			})
 
 			this._socket.on("message", (msg, rinfo) => {

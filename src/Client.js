@@ -56,6 +56,7 @@ class Server extends EventEmitter {
 			}
 
 			console.log(this._buffer.length)
+			this._buffer = Buffer.alloc(0)
 		})
 
 		this._transport.on("connect", () => this.emit("connect", this._host, this._tcpPort))
