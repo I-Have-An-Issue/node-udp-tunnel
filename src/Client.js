@@ -25,17 +25,21 @@ class Server extends EventEmitter {
 				socket = dgram.createSocket("udp4")
 				this._connections.set(`${rinfo.address}:${rinfo.port}`, socket)
 
-				socket.on("message", (msg2, rinfo) => {
-					const incomingRinfo = ipBuffer.toBuffer(rinfo)
-					const packet = Buffer.concat([incomingRinfo, msg2])
-					this._transport.write(packet)
+				socket.on("message", (outgoingMsg) => {
+					const outgoingRinfo = ipBuffer.toBuffer(rinfo)
+					const outgoingPacket = Buffer.concat([outgoingRinfo, outgoingMsg])
+					this._transport.write(outgoingPacket)
 				})
 
 				socket.on("listening", () => {
 					socket.send(packet, this._udpPort, "127.0.0.1")
 				})
+
+				socket.bind()
 			}
-			console.log(msg, rinfo, packet.toString())
+
+			console.log(rinfo)
+			console.log(packet, "\n")
 		})
 
 		this._transport.on("connect", () => this.emit("connect", this._host, this._tcpPort))
