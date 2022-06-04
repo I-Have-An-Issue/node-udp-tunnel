@@ -25,9 +25,16 @@ class Server extends EventEmitter {
 
 				socket.on("message", (msg, rinfo) => {
 					const incomingRinfo = ipBuffer.toBuffer(rinfo)
-					this._transport.write(Buffer.concat([incomingRinfo, msg]))
+					const packet = Buffer.concat([incomingRinfo, msg])
+					console.log("[client in]", packet.length)
+					this._transport.write(packet)
+				})
+
+				socket.on("listening", () => {
+					socket.send(msg.slice(6, msg.length), this._udpPort, "127.0.0.1")
 				})
 			}
+			console.log("[client out]", msg.length)
 		})
 
 		this._transport.on("connect", () => this.emit("connect", this._host, this._tcpPort))
