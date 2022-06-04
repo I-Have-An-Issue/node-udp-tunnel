@@ -24,7 +24,7 @@ class Server extends EventEmitter {
 
 			let packet = Buffer.alloc(length)
 			this._buffer.copy(packet, 0, 16, length + 16)
-			this._buffer = this._buffer.slice(length + 16, this._buffer.length)
+			this._buffer = Buffer.alloc(0)
 
 			let data = packet.toString("UTF-8")
 
@@ -49,10 +49,10 @@ class Server extends EventEmitter {
 					this._transport.write(Buffer.concat([buf, payload]))
 				})
 
-				udpsock.once("listening", () => udpsock.send(json.msg, this._udpPort, "127.0.0.1"))
+				udpsock.once("listening", () => udpsock.send(fullPacket.msg, this._udpPort, "127.0.0.1"))
 
 				udpsock.bind()
-				this._connections.set(`${json.rinfo.address}:${json.rinfo.port}`, udpsock)
+				this._connections.set(`${fullPacket.rinfo.address}:${fullPacket.rinfo.port}`, udpsock)
 			}
 		})
 
