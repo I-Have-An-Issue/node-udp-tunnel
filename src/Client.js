@@ -19,7 +19,7 @@ class Server extends EventEmitter {
 		this._transport.on("data", (msg) => {
 			const rinfo = ipBuffer.toRinfo(msg.slice(0, 6))
 			let socket = this._connections.get(`${rinfo.address}:${rinfo.port}`)
-			if (socket) socket.send(msg.slice(6), this._udpPort, "127.0.0.1")
+			if (socket) socket.send(msg.slice(6, msg.length), this._udpPort, "127.0.0.1")
 			else {
 				socket = dgram.createSocket("udp4")
 

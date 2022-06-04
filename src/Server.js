@@ -20,7 +20,7 @@ class Server extends EventEmitter {
 
 			transport.on("data", (msg) => {
 				const rinfo = ipBuffer.toRinfo(msg.slice(0, 6))
-				this._socket.send(msg.slice(6), rinfo.port, rinfo.address)
+				this._socket.send(msg.slice(6, msg.length), rinfo.port, rinfo.address)
 			})
 
 			this._socket.on("message", (msg, rinfo) => {
