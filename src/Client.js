@@ -18,6 +18,7 @@ class Server extends EventEmitter {
 		this._transport = net.Socket()
 
 		this._transport.on("data", (msg) => {
+			console.log(msg, "\n")
 			const rinfo = ipBuffer.toRinfo(msg.slice(0, 6))
 			const packet = msg.slice(6, msg.length)
 			let socket = this._connections.get(`${rinfo.address}:${rinfo.port}`)

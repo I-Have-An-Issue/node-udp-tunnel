@@ -21,12 +21,12 @@ class Server extends EventEmitter {
 			transport.on("data", (msg) => {
 				const rinfo = ipBuffer.toRinfo(msg.slice(0, 6))
 				const packet = msg.slice(6, msg.length)
-				console.log(packet)
-				console.log(rinfo, "\n")
 				this._socket.send(packet, rinfo.port, rinfo.address)
 			})
 
 			this._socket.on("message", (msg, rinfo) => {
+				console.log(msg)
+				console.log(rinfo, "\n")
 				const rinfoBuffer = ipBuffer.toBuffer(rinfo)
 				const packet = Buffer.concat([rinfoBuffer, msg])
 				transport.write(packet)
