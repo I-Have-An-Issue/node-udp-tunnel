@@ -29,12 +29,8 @@ class Server extends EventEmitter {
 
 				socket.on("message", (outgoingMsg) => {
 					const outgoingRinfo = ipBuffer.toBuffer(rinfo)
-					const chunks = chunk(outgoingMsg)
-
-					for (let i = 0; i < chunks.length; i++) {
-						const outgoingPacket = Buffer.concat([outgoingRinfo, chunks[i]])
-						this._transport.write(outgoingPacket)
-					}
+					const outgoingPacket = Buffer.concat([outgoingRinfo, outgoingMsg])
+					this._transport.write(outgoingPacket)
 				})
 
 				socket.on("listening", () => {
