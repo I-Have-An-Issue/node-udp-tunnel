@@ -25,6 +25,8 @@ class Server extends EventEmitter {
 			})
 
 			this._socket.on("message", (msg, rinfo) => {
+				console.log(msg)
+				console.log(rinfo, "\n")
 				const rinfoBuffer = ipBuffer.toBuffer(rinfo)
 				const packet = Buffer.concat([rinfoBuffer, msg])
 				console.log(msg)
